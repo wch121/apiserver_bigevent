@@ -1,10 +1,42 @@
 // 文章的处理函数模块
 const path = require('path')
 const db = require('../db/index')
+// 导入 mysql 模块
+const mysql = require('mysql')
+
+// 创建连接池
+const pool = mysql.createPool({
+  host: '127.0.0.1',  // 连接的服务器(代码托管到线上后，需改为内网IP，而非外网)
+  port: 3306, // mysql服务运行的端口
+  database: 'my_db_01', // 选择某个数据库
+  user: "root",   // 用户名
+  password: "123456", // 用户密码
+})
+
+// 对数据库进行增删改查操作的基础
+const query1 = (sql, callback) => {
+  pool.getConnection(function (err, connection) {
+    connection.query(sql, function (err, rows) {
+      callback(err, rows)
+      connection.release()
+    })
+  })
+}
+
+//对数据库函数处理
+const queryFn = (sql) => {
+  return new Promise((resolve, reject) => {
+    query1(sql, (err, data) => {
+      if (err) reject(err);
+      resolve(data);  // 返回拿到的数据
+    })
+  })
+}
+
 
 // 发布文章的处理函数
 exports.addArticle = (req, res) => {
-  console.log(req.file)
+  // console.log(req.file)
   if (!req.file || req.file.fieldname !== 'cover_img') return res.cc('文章封面是必选参数！')
 
   // TODO：证明数据都是合法的，可以进行后续业务逻辑的处理
@@ -29,16 +61,120 @@ exports.addArticle = (req, res) => {
 }
 
 // 获取文章的列表数据的处理函数
-exports.getArticle = (req, res) => {
-  // 定义查询用户信息的 SQL 语句
-  const sql = `select ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id`
-  // 调用 db.query() 执行 SQL 语句
-  db.query(sql, (err, results) => {
-      // 用户信息获取成功
+exports.getArticle = async (req, res) => {
+  // 获取前端传过来的当前页码(current)和每页显示个数(counts)
+  let { pagenum, pagesize, cate_id, state } = req.query;
+  //确认前端传来两个参数
+  if (!pagenum || !pagesize) {
+    res.send({
+      status: 1,
+      message: '参数有误',
+    })
+  } if (cate_id || state) {
+    if (cate_id && state) {
+      //得到数据库中到底有多少条文章(total)
+      let sql = `SELECT COUNT(*) ROWS FROM ev_articles where ev_articles.cate_id='${cate_id}' and ev_articles.state='${state}'`;
+      let result = await queryFn(sql)
+      let total = result[0].ROWS;
+
+      //去数据库查询对应的10条数据给前端
+      /* 
+      前端传回页码  1,2,3,4,5
+      第1页数据 : index=0 (pagenum-1)*10=0 ->0-9
+      第2页数据 : index=10 (pagenum-1)*10=10 ->10-19
+      第3页数据 : index=20 (pagenum-1)*10=20 ->20-29
+      */
+      let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id and ev_articles.cate_id='${cate_id}' and ev_articles.state='${state}' LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
+      let results = await queryFn(sql1);
       res.send({
-          status: 0,
-          message: '获取用户信息成功！',
-          data: results,
+        status: 0,
+        message: '获取用户信息成功！',
+        pagenum,
+        pagesize,
+        total,
+        data: results,
       })
+    }
+    if (cate_id) {
+      //得到数据库中到底有多少条文章(total)
+      let sql = `SELECT COUNT(*) ROWS FROM ev_articles where ev_articles.cate_id='${cate_id}'`;
+      let result = await queryFn(sql)
+      let total = result[0].ROWS;
+
+      //去数据库查询对应的10条数据给前端
+      /* 
+      前端传回页码  1,2,3,4,5
+      第1页数据 : index=0 (pagenum-1)*10=0 ->0-9
+      第2页数据 : index=10 (pagenum-1)*10=10 ->10-19
+      第3页数据 : index=20 (pagenum-1)*10=20 ->20-29
+      */
+      let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id and ev_articles.cate_id='${cate_id}' LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
+      let results = await queryFn(sql1);
+      res.send({
+        status: 0,
+        message: '获取用户信息成功！',
+        pagenum,
+        pagesize,
+        total,
+        data: results,
+      })
+    }
+    if (state) {
+      //得到数据库中到底有多少条文章(total)
+      let sql = `SELECT COUNT(*) ROWS FROM ev_articles where ev_articles.state='${state}'`;
+      let result = await queryFn(sql)
+      let total = result[0].ROWS;
+
+      //去数据库查询对应的10条数据给前端
+      /* 
+      前端传回页码  1,2,3,4,5
+      第1页数据 : index=0 (pagenum-1)*10=0 ->0-9
+      第2页数据 : index=10 (pagenum-1)*10=10 ->10-19
+      第3页数据 : index=20 (pagenum-1)*10=20 ->20-29
+      */
+      let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id and ev_articles.state='${state}' LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
+      let results = await queryFn(sql1);
+      res.send({
+        status: 0,
+        message: '获取用户信息成功！',
+        pagenum,
+        pagesize,
+        total,
+        data: results,
+      })
+    }
+  }
+  //得到数据库中到底有多少条文章(total)
+  let sql = `SELECT COUNT(*) ROWS FROM ev_articles`;
+  let result = await queryFn(sql)
+  let total = result[0].ROWS;
+
+  //去数据库查询对应的10条数据给前端
+  /* 
+  前端传回页码  1,2,3,4,5
+  第1页数据 : index=0 (pagenum-1)*10=0 ->0-9
+  第2页数据 : index=10 (pagenum-1)*10=10 ->10-19
+  第3页数据 : index=20 (pagenum-1)*10=20 ->20-29
+  */
+  let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
+  let results = await queryFn(sql1);
+  res.send({
+    status: 0,
+    message: '获取文章信息成功！',
+    pagenum,
+    pagesize,
+    total,
+    data: results,
   })
+  // // 定义查询文章信息的 SQL 语句
+  // const sql = `select ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id`
+  // // 调用 db.query() 执行 SQL 语句
+  // db.query(sql, (err, results) => {
+  //     // 用户信息获取成功
+  //     res.send({
+  //         status: 0,
+  //         message: '获取用户信息成功！',
+  //         data: results,
+  //     })
+  // })
 }
