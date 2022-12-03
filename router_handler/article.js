@@ -27,3 +27,18 @@ exports.addArticle = (req, res) => {
     res.cc('发布文章成功！', 0)
   })
 }
+
+// 获取文章的列表数据的处理函数
+exports.getArticle = (req, res) => {
+  // 定义查询用户信息的 SQL 语句
+  const sql = `select ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id`
+  // 调用 db.query() 执行 SQL 语句
+  db.query(sql, (err, results) => {
+      // 用户信息获取成功
+      res.send({
+          status: 0,
+          message: '获取用户信息成功！',
+          data: results,
+      })
+  })
+}
