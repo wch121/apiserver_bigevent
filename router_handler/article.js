@@ -73,7 +73,7 @@ exports.getArticle = async (req, res) => {
   } if (cate_id || state) {
     if (cate_id && state) {
       //得到数据库中到底有多少条文章(total)
-      let sql = `SELECT COUNT(*) ROWS FROM ev_articles where ev_articles.cate_id='${cate_id}' and ev_articles.state='${state}'`;
+      let sql = `SELECT COUNT(*) ROWS FROM ev_articles where is_delete=0 and ev_articles.cate_id='${cate_id}' and ev_articles.state='${state}'`;
       let result = await queryFn(sql)
       let total = result[0].ROWS;
 
@@ -84,7 +84,7 @@ exports.getArticle = async (req, res) => {
       第2页数据 : index=10 (pagenum-1)*10=10 ->10-19
       第3页数据 : index=20 (pagenum-1)*10=20 ->20-29
       */
-      let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id and ev_articles.cate_id='${cate_id}' and ev_articles.state='${state}' LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
+      let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.is_delete=0 and ev_articles.cate_id=ev_article_cate.Id and ev_articles.cate_id='${cate_id}' and ev_articles.state='${state}' LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
       let results = await queryFn(sql1);
       res.send({
         status: 0,
@@ -97,7 +97,7 @@ exports.getArticle = async (req, res) => {
     }
     if (cate_id) {
       //得到数据库中到底有多少条文章(total)
-      let sql = `SELECT COUNT(*) ROWS FROM ev_articles where ev_articles.cate_id='${cate_id}'`;
+      let sql = `SELECT COUNT(*) ROWS FROM ev_articles where is_delete=0 and ev_articles.cate_id='${cate_id}'`;
       let result = await queryFn(sql)
       let total = result[0].ROWS;
 
@@ -108,7 +108,7 @@ exports.getArticle = async (req, res) => {
       第2页数据 : index=10 (pagenum-1)*10=10 ->10-19
       第3页数据 : index=20 (pagenum-1)*10=20 ->20-29
       */
-      let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id and ev_articles.cate_id='${cate_id}' LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
+      let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.is_delete=0 and ev_articles.cate_id=ev_article_cate.Id and ev_articles.cate_id='${cate_id}' LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
       let results = await queryFn(sql1);
       res.send({
         status: 0,
@@ -121,7 +121,7 @@ exports.getArticle = async (req, res) => {
     }
     if (state) {
       //得到数据库中到底有多少条文章(total)
-      let sql = `SELECT COUNT(*) ROWS FROM ev_articles where ev_articles.state='${state}'`;
+      let sql = `SELECT COUNT(*) ROWS FROM ev_articles where is_delete=0 and ev_articles.state='${state}'`;
       let result = await queryFn(sql)
       let total = result[0].ROWS;
 
@@ -132,7 +132,7 @@ exports.getArticle = async (req, res) => {
       第2页数据 : index=10 (pagenum-1)*10=10 ->10-19
       第3页数据 : index=20 (pagenum-1)*10=20 ->20-29
       */
-      let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id and ev_articles.state='${state}' LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
+      let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.is_delete=0 and ev_articles.cate_id=ev_article_cate.Id and ev_articles.state='${state}' LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
       let results = await queryFn(sql1);
       res.send({
         status: 0,
@@ -145,7 +145,7 @@ exports.getArticle = async (req, res) => {
     }
   }
   //得到数据库中到底有多少条文章(total)
-  let sql = `SELECT COUNT(*) ROWS FROM ev_articles`;
+  let sql = `SELECT COUNT(*) ROWS FROM ev_articles where is_delete=0`;
   let result = await queryFn(sql)
   let total = result[0].ROWS;
 
@@ -156,7 +156,7 @@ exports.getArticle = async (req, res) => {
   第2页数据 : index=10 (pagenum-1)*10=10 ->10-19
   第3页数据 : index=20 (pagenum-1)*10=20 ->20-29
   */
-  let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
+  let sql1 = `SELECT ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.is_delete=0 and ev_articles.cate_id=ev_article_cate.Id LIMIT ${(pagenum - 1) * pagesize},${pagesize}`;
   let results = await queryFn(sql1);
   res.send({
     status: 0,
@@ -167,7 +167,7 @@ exports.getArticle = async (req, res) => {
     data: results,
   })
   // // 定义查询文章信息的 SQL 语句
-  // const sql = `select ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.cate_id=ev_article_cate.Id`
+  // const sql = `select ev_articles.id as id,title,pub_date,state,ev_article_cate.name as cate_name from ev_articles,ev_article_cate where ev_articles.is_delete=0 and ev_articles.cate_id=ev_article_cate.Id`
   // // 调用 db.query() 执行 SQL 语句
   // db.query(sql, (err, results) => {
   //     // 用户信息获取成功
@@ -177,4 +177,17 @@ exports.getArticle = async (req, res) => {
   //         data: results,
   //     })
   // })
+}
+
+
+// 删除文章的处理函数
+exports.deleteArticlebyId = (req, res) => {
+  // 定义标记删除的 SQL 语句
+  const sql = `update ev_articles set is_delete=1 where id=?`
+  // 调用 db.query() 执行 SQL 语句
+  db.query(sql, req.params.id, (err, results) => {
+      if (err) return res.cc(err)
+      if (results.affectedRows !== 1) return res.cc('删除文章失败！')
+      res.cc('删除文章成功！', 0)
+  })
 }
