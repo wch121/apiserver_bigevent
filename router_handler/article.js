@@ -3,9 +3,10 @@ const path = require('path')
 const db = require('../db/index')
 // 导入 mysql 模块
 const mysql = require('mysql')
+const { promisify } = require('util')
 
 // 创建连接池
-const pool = mysql.createPool({
+const dbpool = mysql.createPool({
   host: '127.0.0.1',  // 连接的服务器(代码托管到线上后，需改为内网IP，而非外网)
   port: 3306, // mysql服务运行的端口
   database: 'my_db_01', // 选择某个数据库
@@ -13,9 +14,11 @@ const pool = mysql.createPool({
   password: "123456", // 用户密码
 })
 
+const queryByPromisify = promisify(dbpool.query).bind(db)
+
 // 对数据库进行增删改查操作的基础
 const query1 = (sql, callback) => {
-  pool.getConnection(function (err, connection) {
+  dbpool.getConnection(function (err, connection) {
     connection.query(sql, function (err, rows) {
       callback(err, rows)
       connection.release()
@@ -55,8 +58,19 @@ exports.addArticle = (req, res) => {
   const sql = `insert into ev_articles set ?`
   db.query(sql, articleInfo, (err, results) => {
     if (err) return res.cc(err)
-    if (results.affectedRows !== 1) return res.cc('发布新文章失败！')
-    res.cc('发布文章成功！', 0)
+    if (results.affectedRows !== 1) {
+      res.send({
+        status: 0,
+        msg: '发布新文章失败！'
+      })
+      return res.cc('发布新文章失败！')
+    } else {
+      res.cc('发布文章成功！', 0)
+      res.send({
+        status: 0,
+        msg: '更新文章成功'
+      })
+    }
   })
 }
 
@@ -186,8 +200,53 @@ exports.deleteArticlebyId = (req, res) => {
   const sql = `update ev_articles set is_delete=1 where id=?`
   // 调用 db.query() 执行 SQL 语句
   db.query(sql, req.params.id, (err, results) => {
-      if (err) return res.cc(err)
-      if (results.affectedRows !== 1) return res.cc('删除文章失败！')
-      res.cc('删除文章成功！', 0)
+    if (err) return res.cc(err)
+    if (results.affectedRows !== 1) return res.cc('删除文章失败！')
+    res.cc('删除文章成功！', 0)
   })
+}
+
+// 根据 Id 获取文章的处理函数
+exports.getArticleById = (req, res) => {
+  // 定义根据 ID 获取文章分类数据的 SQL 语句
+  const sql = `select * from ev_articles where id=?`
+  // 调用 db.query() 执行 SQL 语句
+  db.query(sql, req.params.id, (err, results) => {
+    if (err) return res.cc(err)
+    if (results.length !== 1) return res.cc('获取文章分类数据失败！')
+    res.send({
+      status: 0,
+      message: '获取文章分类数据成功！',
+      data: results[0],
+    })
+  })
+}
+
+// 根据 Id 更新文章的处理函数
+exports.editArticleById = async (req, res) => {
+  // 手动校验上传的文件
+  if (!req.file || req.file.fieldname !== 'cover_img') {
+    return res.cc('文章封面必选')
+  }
+
+  const sql = `update ev_articles set ? where id = ?`
+
+  const articleinfo = {
+    ...req.body,
+    pub_date: new Date(),
+    cover_img: path.join('/uploads', req.file.filename)
+  }
+
+  try {
+    let result = await queryByPromisify(sql, [articleinfo, req.body.id])
+    if (result.affectedRows !== 1) {
+      res.cc('更新文章失败')
+    }
+    res.send({
+      status: 0,
+      msg: '更新文章成功'
+    })
+  } catch (e) {
+    return res.cc(e)
+  }
 }

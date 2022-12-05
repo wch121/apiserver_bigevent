@@ -26,3 +26,20 @@ exports.delete_article_schema = {
     id,
   },
 }
+
+// 验证规则对象 - 根据Id获取文章
+exports.get_article_schema = {
+  params: {
+    id,
+  },
+}
+// 验证规则对象 - 根据Id更新文章
+exports.eidt_article_schema = {
+  body: {
+      id,
+      title,
+      cate_id,
+      content,
+      state
+  }
+}
